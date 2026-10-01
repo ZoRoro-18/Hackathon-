@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import api from '../lib/api';
 
 const AuthContext = createContext();
 
@@ -20,15 +21,8 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.data);
-      } else {
-        setToken(null);
-      }
+      const res = await api.get('/auth/me');
+      setUser(res.data.data);
     } catch (err) {
       console.error('Auth check failed:', err);
       setToken(null);
@@ -38,14 +32,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const res = await fetch('http://localhost:5000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Login failed');
-    setToken(data.data.token);
+    const res = await api.post('/auth/login', { email, password });
+    setToken(res.data.data.token);
+  };
+  
+  const register = async (full_name, email, password, business_name) => {
+    await api.post('/auth/register', { full_name, email, password, business_name });
   };
 
   const logout = () => {
@@ -53,7 +45,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

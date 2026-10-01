@@ -1,6 +1,3 @@
-git init
-git add .
-git commit -m "Initial commit for KhaataAI Hackathon build"
-git branch -M main
-git remote add origin https://github.com/ZoRoro-18/Hackathon-.git
-git push -u origin main
+git add backend/scripts/populate-env.js frontend/src/pages/Login.jsx
+git commit --amend --no-edit
+git push -u origin main -f

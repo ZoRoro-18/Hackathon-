@@ -24,24 +24,7 @@ app.use(helmet());
 app.use(globalLimiter);
 
 // CORS configuration
-const allowedOrigins = [config.frontendUrl];
-if (config.nodeEnv !== 'production') {
-  allowedOrigins.push('http://localhost:5173');
-}
-
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, health checks)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(cors({ origin: '*' }));
 
 // OPTIONS preflight handled by cors middleware
 // Body parsing

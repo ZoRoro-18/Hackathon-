@@ -34,7 +34,9 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post('/upload', uploadLimiter, upload.single('document'), documentController.upload);
+const uploadMiddleware = upload.single('file'); // Ensure it expects 'file' to match formData.append('file', file)
+
+router.post('/upload', uploadLimiter, uploadMiddleware, documentController.upload);
 router.get('/', documentController.list);
 
 export default router;

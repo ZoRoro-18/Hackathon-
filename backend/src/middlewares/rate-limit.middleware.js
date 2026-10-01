@@ -18,10 +18,10 @@ export const globalLimiter = createLimiter({
   max: 300,
 });
 
-// Auth limit: 10 per 15 min per IP
+// Auth limit: 1000 per 15 min per IP (increased for hackathon)
 export const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 1000,
 });
 
 // Upload limit: 40 per hour per user (keyGenerator by user ID)

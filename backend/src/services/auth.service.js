@@ -7,25 +7,30 @@ import { AppError } from '../utils.js';
 
 export const authService = {
   async register({ email, password, fullName, businessName, gstin, state }) {
-    const existing = await userRepository.findByEmail(email);
-    if (existing) {
-      throw new AppError('Email is already registered', 400, 'EMAIL_EXISTS');
+    try {
+      const existing = await userRepository.findByEmail(email);
+      if (existing) {
+        throw new AppError('Email is already registered', 400, 'EMAIL_EXISTS');
+      }
+
+      const passwordHash = await bcrypt.hash(password, 12);
+      
+      const userId = await userRepository.createUserWithProfile({
+        email,
+        passwordHash,
+        fullName,
+        businessName,
+        gstin,
+        state
+      });
+
+      await auditRepository.log(userId, 'USER_REGISTERED', { email });
+
+      return this.generateAuthResponse(userId, 'merchant');
+    } catch (err) {
+      console.error('[authService.register DB Error]', err);
+      throw err;
     }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    
-    const userId = await userRepository.createUserWithProfile({
-      email,
-      passwordHash,
-      fullName,
-      businessName,
-      gstin,
-      state
-    });
-
-    await auditRepository.log(userId, 'USER_REGISTERED', { email });
-
-    return this.generateAuthResponse(userId, 'merchant');
   },
 
   async login({ email, password }) {

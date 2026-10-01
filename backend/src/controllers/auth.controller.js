@@ -24,17 +24,44 @@ const prefsSchema = z.object({
 });
 
 export const authController = {
-  register: asyncHandler(async (req, res) => {
-    const data = registerSchema.parse(req.body);
-    const result = await authService.register(data);
-    return success(res, result, 201);
-  }),
+  register: async (req, res) => {
+    try {
+      // Map payload to match the Zod schema, allowing fallback to snake_case variables from frontend
+      const payload = {
+        email: req.body.email,
+        password: req.body.password,
+        fullName: req.body.fullName || req.body.full_name || 'Hackathon User',
+        businessName: req.body.businessName || req.body.business_name || 'Hackathon Business',
+        gstin: req.body.gstin,
+        state: req.body.state
+      };
 
-  login: asyncHandler(async (req, res) => {
-    const data = loginSchema.parse(req.body);
-    const result = await authService.login(data);
-    return success(res, result);
-  }),
+      const data = registerSchema.parse(payload);
+      const result = await authService.register(data);
+      return success(res, result, 201);
+    } catch (err) {
+      console.error('[Register Controller Error]', err);
+      // Ensure we always return a 500 with exact error for debugging
+      return res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Server error during registration', details: err.issues || [] }
+      });
+    }
+  },
+
+  login: async (req, res) => {
+    try {
+      const data = loginSchema.parse(req.body);
+      const result = await authService.login(data);
+      return success(res, result);
+    } catch (err) {
+      console.error('[Login Error]', err);
+      return res.status(500).json({
+        success: false,
+        error: { message: err.message, stack: err.stack }
+      });
+    }
+  },
 
   me: asyncHandler(async (req, res) => {
     // req.user is populated by auth middleware
