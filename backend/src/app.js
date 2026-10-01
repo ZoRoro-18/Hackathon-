@@ -61,7 +61,7 @@ app.get('/', (_req, res) => {
 });
 
 // Health check (public)
-app.get('/api/health', async (_req, res) => {
+app.get(['/api/health', '/health'], async (_req, res) => {
   try {
     const { pool } = await import('./db.js');
     await pool.query('SELECT 1');
@@ -71,13 +71,18 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-// API routes
+// API routes (support both /api/path and /path in serverless contexts)
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
 app.use('/api/profile', profileRoutes);
+app.use('/profile', profileRoutes);
+
 app.use('/api/documents', documentRoutes);
+app.use('/documents', documentRoutes);
 
 // 404 handler for unmatched API routes
-app.use('/api', (_req, res) => {
+app.use(['/api', '/auth', '/profile', '/documents'], (_req, res) => {
   res.status(404).json({
     success: false,
     error: { code: 'NOT_FOUND', message: 'Endpoint not found' },
