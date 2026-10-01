@@ -7,30 +7,27 @@ import { AppError } from '../utils.js';
 
 export const authService = {
   async register({ email, password, fullName, businessName, gstin, state }) {
-    try {
-      const existing = await userRepository.findByEmail(email);
-      if (existing) {
-        throw new AppError('Email is already registered', 400, 'EMAIL_EXISTS');
-      }
-
-      const passwordHash = await bcrypt.hash(password, 12);
-      
-      const userId = await userRepository.createUserWithProfile({
-        email,
-        passwordHash,
-        fullName,
-        businessName,
-        gstin,
-        state
-      });
-
-      await auditRepository.log(userId, 'USER_REGISTERED', { email });
-
-      return this.generateAuthResponse(userId, 'merchant');
-    } catch (err) {
-      console.error('[authService.register DB Error]', err);
-      throw err;
+    const existing = await userRepository.findByEmail(email);
+    if (existing) {
+      throw new AppError('Email is already registered', 400, 'EMAIL_EXISTS');
     }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    
+    const userId = await userRepository.createUserWithProfile({
+      email,
+      passwordHash,
+      fullName,
+      businessName,
+      gstin: gstin || null,
+      state: state || null
+    });
+
+    await auditRepository.log(userId, 'USER_REGISTERED', { email });
+
+    const token = this.generateToken(userId, 'merchant');
+    const profile = await userRepository.getProfile(userId);
+    return { token, role: 'merchant', user: profile };
   },
 
   async login({ email, password }) {
@@ -51,15 +48,16 @@ export const authService = {
     await userRepository.updateLastLogin(user.id);
     await auditRepository.log(user.id, 'USER_LOGGED_IN');
 
-    return this.generateAuthResponse(user.id, user.role);
+    const token = this.generateToken(user.id, user.role);
+    const profile = await userRepository.getProfile(user.id);
+    return { token, role: user.role, user: profile };
   },
 
-  generateAuthResponse(userId, role) {
-    const token = jwt.sign(
+  generateToken(userId, role) {
+    return jwt.sign(
       { sub: userId, role },
       config.jwtSecret,
       { expiresIn: '7d' }
     );
-    return { token, role };
   }
 };

@@ -1,61 +1,108 @@
-# Deployment Guide (Vercel & Render)
+# KhaataAI Production Deployment Guide
 
-This guide covers how to deploy the KhaataAI application for production. We recommend deploying the Frontend on **Vercel** and the Backend on **Render**.
+This guide provides exact step-by-step Windows PowerShell instructions to deploy both the Backend API and Frontend Dashboard to **Vercel** (or Render/Cloud).
 
-## 1. Backend Deployment (Render)
+---
 
-1. Create a new **Web Service** on [Render](https://render.com/).
-2. Connect your GitHub repository.
-3. Configure the service:
-   - **Root Directory**: `backend`
-   - **Build Command**: `npm install`
-   - **Start Command**: `node src/app.js` (or `npm start` if defined in package.json)
-4. Add Environment Variables:
-   - `DATABASE_URL` (Your Supabase/Postgres connection string)
-   - `GEMINI_API_KEY` (Your Google Gemini API Key)
-   - `JWT_SECRET` (A strong, random secret key)
-5. Deploy the service. Note the assigned Render URL (e.g., `https://khaata-backend.onrender.com`).
+## 1. Prerequisites
 
-## 2. Frontend Deployment (Vercel CLI)
+Verify you have the Vercel CLI installed and authenticated:
+```powershell
+# Install Vercel CLI globally (if not already installed)
+npm install -g vercel
 
-The frontend is a standard Vite React application, perfectly suited for Vercel.
-
-### Prerequisites
-Make sure you have the Vercel CLI installed and are logged in.
-```bash
-npm i -g vercel
+# Log in to your Vercel account
 vercel login
 ```
 
-### Deployment Steps
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Initialize the Vercel project and link it:
-   ```bash
-   vercel link
-   ```
-3. Set the environment variable for your production backend URL (replace with your Render URL):
-   ```bash
-   vercel env add VITE_API_BASE_URL production
-   # Enter the value: https://khaata-backend.onrender.com
-   ```
-4. Deploy to production:
-   ```bash
-   vercel --prod
-   ```
+---
 
-### Alternatively: Deploying via Vercel Dashboard
-1. Go to the [Vercel Dashboard](https://vercel.com/dashboard) and click "Add New... Project".
-2. Import your GitHub repository.
-3. Configure the project:
-   - **Framework Preset**: Vite
-   - **Root Directory**: `frontend`
-4. Add the `VITE_API_BASE_URL` environment variable pointing to your backend URL.
-5. Click **Deploy**.
+## 2. Backend Deployment (Vercel Serverless Function)
 
-## Troubleshooting
-- **CORS Errors**: Ensure your backend `app.js` CORS configuration allows requests from your Vercel frontend domain in production.
-- **Upload Failures**: Check that your backend host supports multipart/form-data limits suitable for your expected file sizes (Render standard limits usually suffice for invoices/receipts).
-- **Database Connections**: If using Supabase, ensure you are using the pooled connection string (usually ending in `?pgbouncer=true` or port `6543`) for serverless/ephemeral environments.
+The backend is configured with `api/index.js` exporting the Express `app` and `vercel.json` rewrites with a 60-second function timeout for Gemini AI extractions.
+
+### Step-by-Step PowerShell Commands:
+```powershell
+# Navigate to backend directory
+cd D:\Hackathon\backend
+
+# Link or initialize Vercel project
+vercel link
+
+# Add required Environment Variables to Vercel
+vercel env add DATABASE_URL production
+# (Paste your Supabase/PostgreSQL connection string with pgbouncer/pooling)
+
+vercel env add GEMINI_API_KEY production
+# (Paste your Google Gemini API key)
+
+vercel env add GEMINI_MODEL production
+# (Value: gemini-3.1-flash-lite or gemini-3.8-flash)
+
+vercel env add JWT_SECRET production
+# (Paste your secret key)
+
+vercel env add FRONTEND_URL production
+# (Paste your production frontend Vercel URL, e.g. https://khaata-frontend.vercel.app)
+
+vercel env add NODE_ENV production
+# (Value: production)
+
+# Deploy Backend to Production
+vercel --prod
+```
+
+---
+
+## 3. Frontend Deployment (Vercel)
+
+The frontend is a Vite + React application configured with `frontend/vercel.json` SPA rewrite rules.
+
+### Step-by-Step PowerShell Commands:
+```powershell
+# Navigate to frontend directory
+cd D:\Hackathon\frontend
+
+# Verify local production build passes cleanly
+npm run build
+
+# Link Vercel project
+vercel link
+
+# Add backend API URL environment variable
+vercel env add VITE_API_BASE_URL production
+# (Enter the deployed backend Vercel URL, e.g. https://khaata-backend.vercel.app)
+
+# Deploy Frontend to Production
+vercel --prod
+```
+
+---
+
+## 4. Alternative: Backend Deployment on Render
+
+If running as a persistent Node.js service on Render:
+
+1. Create a **New Web Service** connected to your repository.
+2. Settings:
+   - **Root Directory:** `backend`
+   - **Build Command:** `npm install`
+   - **Start Command:** `node server.js`
+3. Add Environment Variables:
+   - `DATABASE_URL`
+   - `GEMINI_API_KEY`
+   - `GEMINI_MODEL` (`gemini-3.1-flash-lite`)
+   - `JWT_SECRET`
+   - `FRONTEND_URL`
+   - `NODE_ENV` (`production`)
+4. Copy the assigned URL (`https://khaata-backend.onrender.com`) and supply it as `VITE_API_BASE_URL` in the frontend Vercel project.
+
+---
+
+## 5. Security & Verification Checklist
+
+- [x] `.env` files are strictly excluded via `.gitignore` and `.vercelignore`.
+- [x] No secrets or credentials are hardcoded in source files.
+- [x] `app.set('trust proxy', 1)` is enabled for rate-limiting behind reverse proxies.
+- [x] CORS dynamic origin resolution supports `FRONTEND_URL` and `*.vercel.app`.
+- [x] Single Page Application (SPA) routing is preserved via `vercel.json` rewrites.

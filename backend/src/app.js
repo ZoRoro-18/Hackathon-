@@ -18,18 +18,38 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Security headers
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}));
 
 // Global rate limiter
 app.use(globalLimiter);
 
-// CORS configuration
-app.use(cors({ origin: '*' }));
+// CORS configuration - supports FRONTEND_URL and local dev
+const allowedOrigins = [
+  config.frontendUrl,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5000',
+  'http://localhost:3000'
+].filter(Boolean);
 
-// OPTIONS preflight handled by cors middleware
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
+    if (!origin || allowedOrigins.includes(origin) || config.nodeEnv === 'development' || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Body parsing
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Service banner
 app.get('/', (_req, res) => {
@@ -80,7 +100,7 @@ app.use((err, _req, res, _next) => {
       success: false,
       error: {
         code: 'LIMIT_FILE_SIZE',
-        message: 'File is too large. Maximum allowed size is 4 MB.',
+        message: 'File is too large. Maximum allowed size is 10 MB.',
       },
     });
   }
@@ -89,19 +109,23 @@ app.use((err, _req, res, _next) => {
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return res.status(400).json({
       success: false,
-      error: { code: 'UNEXPECTED_FILE', message: 'Only one file is allowed per request.' },
+      error: { code: 'UNEXPECTED_FILE', message: 'Unexpected file field. Please upload using field name "file".' },
     });
   }
 
-  // Log error (never log secrets or file bytes)
+  // Log full error stack to terminal (never log secrets or file bytes)
   console.error(`[ERROR] ${err.message}`);
+  if (err.stack) {
+    console.error(err.stack);
+  }
 
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     success: false,
     error: {
       code: err.code || 'INTERNAL_ERROR',
-      message: statusCode === 500 ? 'An unexpected error occurred' : err.message,
+      message: err.message || 'An unexpected error occurred',
+      details: err.details || undefined,
       ...(config.nodeEnv !== 'production' && { stack: err.stack }),
     },
   });

@@ -1,13 +1,14 @@
 // KhaataAI Backend - Configuration
 // Validates all required environment variables at startup using Zod.
 
+import 'dotenv/config';
 import { z } from 'zod';
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required — get it from Supabase Dashboard > Connect > Transaction Pooler (port 6543)'),
-  DATABASE_URL_MIGRATE: z.string().min(1, 'DATABASE_URL_MIGRATE is required — get it from Supabase Dashboard > Connect > Session Pooler (port 5432)'),
-  GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required — get it from https://aistudio.google.com/apikey'),
-  GEMINI_MODEL: z.string().min(1, 'GEMINI_MODEL is required — set it to a Gemini model name (e.g. gemini-2.0-flash). No default is provided.'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DATABASE_URL_MIGRATE: z.string().min(1, 'DATABASE_URL_MIGRATE is required'),
+  GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
+  GEMINI_MODEL: z.string().min(1, 'GEMINI_MODEL is required'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   ADMIN_EMAIL: z.string().email('ADMIN_EMAIL must be a valid email'),
   ADMIN_PASSWORD: z.string().min(10, 'ADMIN_PASSWORD must be at least 10 characters'),
@@ -19,7 +20,7 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('\n✗ Environment validation failed:\n');
+  console.error('\nEnvironment validation failed:\n');
   for (const issue of parsed.error.issues) {
     console.error(`  ${issue.path.join('.')}: ${issue.message}`);
   }

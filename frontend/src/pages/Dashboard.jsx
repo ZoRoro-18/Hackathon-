@@ -1,203 +1,423 @@
-import { useState, useEffect } from 'react';
-import { Upload, FileText, CheckCircle, AlertCircle, Loader, TrendingUp, TrendingDown, FileSpreadsheet, AlertTriangle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Receipt, 
+  Percent, 
+  Clock, 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  FileText, 
+  CheckCircle2, 
+  AlertCircle, 
+  XCircle, 
+  Plus,
+  IndianRupee,
+  Building2,
+  Calendar
+} from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Legend, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
 import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
+import { KpiSkeleton, TableSkeleton } from '../components/SkeletonLoader';
+import EmptyState from '../components/EmptyState';
+
+const CATEGORY_COLORS = ['#0f766e', '#d97706', '#2563eb', '#7c3aed', '#db2777', '#059669'];
 
 export default function Dashboard() {
-  const [documents, setDocuments] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const { business } = useAuth();
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
-  const fetchDocuments = async () => {
+  const fetchDashboard = async () => {
     try {
-      const res = await api.get('/documents');
-      setDocuments(res.data.data);
+      setLoading(true);
+      const res = await api.get('/documents/dashboard');
+      if (res.data?.success) {
+        setData(res.data.data);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load dashboard:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      toast.error("Please select a file first");
-      return;
-    }
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
 
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    try {
-      const res = await api.post('/documents/upload', formData, { 
-        headers: { 'Content-Type': 'multipart/form-data' } 
-      });
-      setSelectedFile(null);
-      toast.success('Document processed successfully!');
-      await fetchDocuments();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.error?.message || err.message || 'Failed to upload document');
-    } finally {
-      setIsUploading(false);
-    }
+  const formatCurrency = (num) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(num || 0);
   };
 
-  // Demo State Data
-  const demoMetrics = [
-    { title: 'Total Income', amount: '₹2,45,000', icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { title: 'Total Expenses', amount: '₹1,12,000', icon: TrendingDown, color: 'text-rose-400', bg: 'bg-rose-400/10' },
-    { title: 'Net GST Payable', amount: '₹23,400', icon: FileSpreadsheet, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
-    { title: 'Overdue Invoices', amount: '3', icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-500/10', highlight: true }
-  ];
-
-  const demoDocuments = [
-    { id: 1, party: 'Reliance Retail', amount: '₹14,000', status: 'Paid', date: 'Oct 24, 2026', type: 'Invoice' },
-    { id: 2, party: 'Amazon Web Services', amount: '₹3,500', status: 'Needs Review', date: 'Oct 22, 2026', type: 'Receipt' },
-    { id: 3, party: 'Uber India', amount: '₹840', status: 'Paid', date: 'Oct 21, 2026', type: 'Receipt' },
-  ];
-
-  return (
-    <div className="bg-slate-900 text-slate-50 min-h-full p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
-            <p className="text-slate-400 text-sm mt-1">Here's a summary of your financial health.</p>
-          </div>
-        </div>
-
-        {/* KPI Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {demoMetrics.map((metric, idx) => (
-            <div key={idx} className="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${metric.bg} ${metric.color}`}>
-                  <metric.icon size={24} />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-sm font-medium">{metric.title}</p>
-                  <h3 className={`text-2xl font-bold mt-1 ${metric.highlight ? 'text-red-500' : 'text-slate-50'}`}>
-                    {metric.amount}
-                  </h3>
-                </div>
-              </div>
-            </div>
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <KpiSkeleton key={i} />
           ))}
         </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 fintech-card p-6 h-80 animate-pulse bg-slate-200/50 dark:bg-slate-800/50 rounded-xl" />
+          <div className="fintech-card p-6 h-80 animate-pulse bg-slate-200/50 dark:bg-slate-800/50 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Upload Section */}
-          <div className="lg:col-span-1 bg-slate-800 border border-slate-700 rounded-xl shadow-lg p-6 h-fit">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-teal-400">
-              <Upload size={20} />
-              Process Document
-            </h3>
-            <p className="text-slate-400 text-sm mb-6">
-              Upload an invoice, receipt, or bank statement. Our Gemini AI Engine will automatically extract the data.
-            </p>
-            
-            <form onSubmit={handleUpload}>
-              <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center mb-4 bg-slate-900/50 hover:bg-slate-800/50 transition-colors">
-                <input 
-                  type="file" 
-                  accept="image/*,application/pdf"
-                  onChange={(e) => setSelectedFile(e.target.files[0])}
-                  className="w-full text-slate-300 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-600/10 file:text-teal-400 hover:file:bg-teal-600/20 cursor-pointer"
-                  disabled={isUploading}
-                />
+  const kpis = data?.kpis || {
+    income: 0,
+    expenses: 0,
+    netProfit: 0,
+    gstCollected: 0,
+    gstPaid: 0,
+    netGstPayable: 0,
+    receivables: 0,
+    payables: 0,
+    overdueCount: 0,
+    totalDocuments: 0
+  };
+
+  const monthlyTrends = data?.monthlyTrends || [];
+  const categoryBreakdown = data?.categoryBreakdown || [];
+  const recentDocuments = data?.recentDocuments || [];
+
+  const isBrandNewUser = kpis.totalDocuments === 0;
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Financial Overview
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Real-time analytics and GST compliance computed from verified documents
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link to="/upload" className="btn-primary shadow-sm">
+            <Plus className="w-4 h-4" />
+            <span>Add Invoice</span>
+          </Link>
+        </div>
+      </div>
+
+      {isBrandNewUser ? (
+        <EmptyState
+          icon={Receipt}
+          title="No documents extracted yet"
+          description="Upload your first sales tax invoice, purchase bill, or expense receipt to start generating automated financial insights and GST calculations."
+          actionText="Upload Document Now"
+          onAction={() => window.location.href = '/upload'}
+        />
+      ) : (
+        <>
+          {/* 9 KPI Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* 1. Total Income */}
+            <div className="fintech-card p-5 border-l-4 border-l-teal-600">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Total Income
+                </span>
+                <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-400">
+                  <ArrowUpRight className="w-4 h-4" />
+                </div>
               </div>
-              
-              <button 
-                type="submit" 
-                className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white px-4 py-2.5 rounded-lg font-medium transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed" 
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <>
-                    <Loader size={18} className="animate-spin" />
-                    Processing AI...
-                  </>
-                ) : (
-                  'Extract Data'
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-3">
+                {formatCurrency(kpis.income)}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">From verified sales documents</p>
+            </div>
+
+            {/* 2. Total Expenses */}
+            <div className="fintech-card p-5 border-l-4 border-l-rose-500">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Total Expenses
+                </span>
+                <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400">
+                  <ArrowDownLeft className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-3">
+                {formatCurrency(kpis.expenses)}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Purchases & operating costs</p>
+            </div>
+
+            {/* 3. Net Profit */}
+            <div className="fintech-card p-5 border-l-4 border-l-emerald-600">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Net Profit
+                </span>
+                <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+              </div>
+              <p className={`text-2xl font-bold mt-3 ${kpis.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                {formatCurrency(kpis.netProfit)}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Income minus Expenses</p>
+            </div>
+
+            {/* 4. GST Output (Collected) */}
+            <div className="fintech-card p-5 border-l-4 border-l-sky-500">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  GST Output
+                </span>
+                <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400">
+                  <Percent className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-3">
+                {formatCurrency(kpis.gstCollected)}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Tax collected on sales</p>
+            </div>
+
+            {/* 5. GST Input (Paid) */}
+            <div className="fintech-card p-5 border-l-4 border-l-indigo-500">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  GST Input (ITC)
+                </span>
+                <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+                  <Receipt className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-3">
+                {formatCurrency(kpis.gstPaid)}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Eligible input tax credit</p>
+            </div>
+
+            {/* 6. Net GST Payable */}
+            <div className="fintech-card p-5 border-l-4 border-l-amber-500">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Net GST Payable
+                </span>
+                <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
+                  <IndianRupee className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-3">
+                {formatCurrency(kpis.netGstPayable)}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Output tax minus Input credit</p>
+            </div>
+
+            {/* 7. Receivables */}
+            <div className="fintech-card p-5 border-l-4 border-l-teal-500">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Receivables
+                </span>
+                <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-400">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-3">
+                {formatCurrency(kpis.receivables)}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Unpaid sales invoices</p>
+            </div>
+
+            {/* 8. Payables & Overdue */}
+            <div className="fintech-card p-5 border-l-4 border-l-purple-500">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Payables
+                </span>
+                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
+                  <Building2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="flex items-baseline justify-between mt-3">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {formatCurrency(kpis.payables)}
+                </p>
+                {kpis.overdueCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                    {kpis.overdueCount} Overdue
+                  </span>
                 )}
-              </button>
-            </form>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">Outstanding bills due</p>
+            </div>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Monthly Income vs Expenses Chart */}
+            <div className="lg:col-span-2 fintech-card p-6">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
+                Income vs Expense Trends
+              </h3>
+              <p className="text-xs text-slate-400 mb-6">Monthly cash flow comparison</p>
+              <div className="h-72 w-full">
+                {monthlyTrends.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthlyTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `₹${v / 1000}k`} />
+                      <Tooltip 
+                        formatter={(value) => [formatCurrency(value), '']}
+                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
+                      />
+                      <Legend />
+                      <Bar dataKey="income" name="Sales (Income)" fill="#0f766e" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="expenses" name="Purchases (Expenses)" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                    No trend data available yet
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Expense By Category Pie Chart */}
+            <div className="fintech-card p-6">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
+                Expense Breakdown
+              </h3>
+              <p className="text-xs text-slate-400 mb-6">Categorized purchase distribution</p>
+              <div className="h-72 w-full">
+                {categoryBreakdown.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryBreakdown}
+                        dataKey="total"
+                        nameKey="category"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        innerRadius={45}
+                        paddingAngle={4}
+                      >
+                        {categoryBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value) => [formatCurrency(value), 'Total']}
+                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                    No expense records available
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Recent Documents Section */}
-          <div className="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-xl shadow-lg overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-              <h3 className="text-lg font-bold flex items-center gap-2 text-white">
-                <FileText size={20} className="text-teal-400" />
-                Recent Documents
-              </h3>
-              <button className="text-sm text-teal-400 hover:text-teal-300 font-medium">View All</button>
+          <div className="fintech-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Recent Processed Invoices
+                </h3>
+                <p className="text-xs text-slate-400">Latest automated extractions and status checks</p>
+              </div>
+              <Link to="/documents" className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline">
+                View All Documents &rarr;
+              </Link>
             </div>
-            
-            <div className="flex-1 overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-300">
-                <thead className="text-xs text-slate-400 uppercase bg-slate-900/50 border-b border-slate-700">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">Document / Party</th>
-                    <th className="px-6 py-4 font-medium">Date</th>
-                    <th className="px-6 py-4 font-medium">Amount</th>
-                    <th className="px-6 py-4 font-medium">Status</th>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-400 uppercase">
+                    <th className="pb-3">Document</th>
+                    <th className="pb-3">Party / Contact</th>
+                    <th className="pb-3">Direction</th>
+                    <th className="pb-3">Date</th>
+                    <th className="pb-3 text-right">Amount</th>
+                    <th className="pb-3 text-center">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/50">
-                  {(!documents || documents.length === 0) ? demoDocuments.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-slate-700/20 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-slate-200">{doc.party}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">{doc.type}</div>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {recentDocuments.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
+                      <td className="py-3.5">
+                        <Link to={`/documents/${doc.id}`} className="font-semibold text-teal-700 dark:text-teal-400 hover:underline flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-slate-400" />
+                          <span>{doc.invoice_number || `Doc #${doc.id}`}</span>
+                        </Link>
                       </td>
-                      <td className="px-6 py-4 text-slate-400">{doc.date}</td>
-                      <td className="px-6 py-4 font-semibold text-white">{doc.amount}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                          doc.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      <td className="py-3.5 text-slate-700 dark:text-slate-300">
+                        {doc.vendor_name || doc.customer_name || 'General Supply'}
+                      </td>
+                      <td className="py-3.5">
+                        <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${
+                          doc.direction === 'sales'
+                            ? 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300'
+                            : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
                         }`}>
-                          {doc.status}
+                          {doc.direction}
+                        </span>
+                      </td>
+                      <td className="py-3.5 text-slate-500 dark:text-slate-400 text-xs">
+                        {doc.invoice_date ? new Date(doc.invoice_date).toLocaleDateString('en-IN') : 'N/A'}
+                      </td>
+                      <td className="py-3.5 text-right font-semibold text-slate-900 dark:text-white">
+                        {formatCurrency(doc.total_amount)}
+                      </td>
+                      <td className="py-3.5 text-center">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          doc.status === 'done'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                            : doc.status === 'needs_review'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                        }`}>
+                          {doc.status === 'done' && <CheckCircle2 className="w-3 h-3" />}
+                          {doc.status === 'needs_review' && <AlertCircle className="w-3 h-3" />}
+                          {doc.status === 'failed' && <XCircle className="w-3 h-3" />}
+                          <span className="capitalize">{doc.status.replace('_', ' ')}</span>
                         </span>
                       </td>
                     </tr>
-                  )) : (
-                    documents.map(doc => {
-                      const meta = typeof doc.extracted_data === 'string' ? JSON.parse(doc.extracted_data) : doc.extracted_data;
-                      return (
-                        <tr key={doc.id} className="hover:bg-slate-700/20 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="font-medium text-slate-200">{meta?.partyName || doc.original_filename}</div>
-                            <div className="text-xs text-slate-500 mt-0.5">{meta?.documentType || 'Document'}</div>
-                          </td>
-                          <td className="px-6 py-4 text-slate-400">{meta?.date || new Date(doc.created_at).toLocaleDateString()}</td>
-                          <td className="px-6 py-4 font-semibold text-white">
-                            {meta?.currency || 'INR'} {meta?.amount?.toLocaleString('en-IN') || '0.00'}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-teal-500/10 text-teal-400 border border-teal-500/20">
-                              Processed
-                            </span>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

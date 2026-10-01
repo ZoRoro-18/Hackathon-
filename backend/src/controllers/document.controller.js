@@ -1,29 +1,76 @@
 import { documentService } from '../services/document.service.js';
+import { success, asyncHandler, AppError } from '../utils.js';
 
 export const documentController = {
-  upload: async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ success: false, error: { message: 'No file provided.' } });
-      }
-      const result = await documentService.processUpload(req.user.id, req.file);
-      return res.status(201).json({ success: true, data: result });
-    } catch (err) {
-      console.error('[Upload Error]', err);
-      // Return 500 JSON to ensure frontend does not hang forever on failure
-      return res.status(500).json({ success: false, error: { message: err.message } });
+  upload: asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new AppError('No file provided. Please attach a PDF or image with field name "file".', 400, 'NO_FILE_PROVIDED');
     }
-  },
+    const document = await documentService.processUpload(req.user.id, req.file);
+    return success(res, document, 201);
+  }),
 
-  list: async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit, 10) || 50;
-      const offset = parseInt(req.query.offset, 10) || 0;
-      const documents = await documentService.listDocuments(req.user.id, limit, offset);
-      return res.status(200).json({ success: true, data: documents });
-    } catch (err) {
-      console.error('[List Documents Error]', err);
-      return res.status(500).json({ success: false, error: { message: err.message } });
-    }
-  }
+  list: asyncHandler(async (req, res) => {
+    const data = await documentService.listDocuments(req.user.id, req.query);
+    return success(res, data);
+  }),
+
+  getDashboard: asyncHandler(async (req, res) => {
+    const data = await documentService.getDashboard(req.user.id);
+    return success(res, data);
+  }),
+
+  getById: asyncHandler(async (req, res) => {
+    const docId = parseInt(req.params.id, 10);
+    if (!docId) throw new AppError('Invalid document ID', 400, 'INVALID_ID');
+    const document = await documentService.getDocument(req.user.id, docId);
+    return success(res, document);
+  }),
+
+  getFile: asyncHandler(async (req, res) => {
+    const docId = parseInt(req.params.id, 10);
+    if (!docId) throw new AppError('Invalid document ID', 400, 'INVALID_ID');
+    const file = await documentService.getFile(req.user.id, docId);
+    
+    res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.original_filename || 'document')}"`);
+    return res.send(file.file_data);
+  }),
+
+  update: asyncHandler(async (req, res) => {
+    const docId = parseInt(req.params.id, 10);
+    if (!docId) throw new AppError('Invalid document ID', 400, 'INVALID_ID');
+    const document = await documentService.saveAndRevalidate(req.user.id, docId, req.body);
+    return success(res, document);
+  }),
+
+  setPaymentStatus: asyncHandler(async (req, res) => {
+    const docId = parseInt(req.params.id, 10);
+    if (!docId) throw new AppError('Invalid document ID', 400, 'INVALID_ID');
+    const { payment_status } = req.body;
+    const document = await documentService.setPaymentStatus(req.user.id, docId, payment_status);
+    return success(res, document);
+  }),
+
+  setDirection: asyncHandler(async (req, res) => {
+    const docId = parseInt(req.params.id, 10);
+    if (!docId) throw new AppError('Invalid document ID', 400, 'INVALID_ID');
+    const { direction } = req.body;
+    const document = await documentService.setDirection(req.user.id, docId, direction);
+    return success(res, document);
+  }),
+
+  retry: asyncHandler(async (req, res) => {
+    const docId = parseInt(req.params.id, 10);
+    if (!docId) throw new AppError('Invalid document ID', 400, 'INVALID_ID');
+    const document = await documentService.retryExtraction(req.user.id, docId);
+    return success(res, document);
+  }),
+
+  delete: asyncHandler(async (req, res) => {
+    const docId = parseInt(req.params.id, 10);
+    if (!docId) throw new AppError('Invalid document ID', 400, 'INVALID_ID');
+    const result = await documentService.deleteDocument(req.user.id, docId);
+    return success(res, result);
+  })
 };
