@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Vercel
+.vercel/
+
+# Environment variables (keep .env.example)
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.DS_Store?
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Samples output
+samples/
+
+# Credentials
+Hackathon credentials.txt
+
+# Test edit from Antigravity

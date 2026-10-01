@@ -1,0 +1,37 @@
+{
+  "name": "khaataai-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "KhaataAI Frontend - Intelligent Document Processing Dashboard",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/ --ext .js,.jsx"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "axios": "^1.20.0",
+    "i18next": "^26.4.2",
+    "lucide-react": "^1.49.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-dropzone": "^20.1.2",
+    "react-hot-toast": "^2.6.1",
+    "react-i18next": "^17.0.15",
+    "react-router-dom": "^7.18.4",
+    "recharts": "^3.10.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^10.11.0",
+    "prettier": "^3.9.9",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.1"
+  }
+}
