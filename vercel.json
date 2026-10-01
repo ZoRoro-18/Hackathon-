@@ -6,7 +6,7 @@
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/api", "destination": "/api/index.js" },
     { "source": "/health", "destination": "/api/index.js" },
-    { "source": "/((?!api/|health).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/index.js": {
