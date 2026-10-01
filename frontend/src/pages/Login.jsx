@@ -10,7 +10,7 @@ export default function Login() {
 
   const [formData, setFormData] = useState({
     email: 'demo@khaata.ai',
-    password: 'password123'
+    password: 'demo123'
   });
   const [loading, setLoading] = useState(false);
 
@@ -105,7 +105,7 @@ export default function Login() {
           {/* Demo Hint */}
           <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/40 text-xs text-teal-800 dark:text-teal-300 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 shrink-0 text-teal-600" />
-            <span>Pre-filled with seeded demo credentials (demo@khaata.ai).</span>
+            <span>Pre-filled with seeded demo credentials (<strong>demo@khaata.ai</strong> / <strong>demo123</strong>).</span>
           </div>
 
           {/* Footer Link */}

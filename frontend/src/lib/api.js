@@ -23,7 +23,10 @@ api.interceptors.response.use(
   (error) => {
     // Show exact backend error message in toast
     const backendMessage = error.response?.data?.error?.message;
-    const fallbackMessage = error.message || 'Network error connecting to backend';
+    const isNetworkError = !error.response || error.code === 'ERR_NETWORK';
+    const fallbackMessage = isNetworkError 
+      ? 'Cannot connect to backend server. Make sure the backend is running on port 5000.' 
+      : (error.message || 'An unexpected error occurred');
     const message = backendMessage || fallbackMessage;
 
     // Do not show toast for silent 401s on GET /auth/me

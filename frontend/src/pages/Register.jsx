@@ -106,11 +106,11 @@ export default function Register() {
                 <input
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="fintech-input pl-9"
-                  placeholder="Min. 6 characters"
+                  placeholder="Min. 8 characters"
                 />
               </div>
             </div>

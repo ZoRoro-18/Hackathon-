@@ -8,6 +8,34 @@ export const AuthProvider = ({ children }) => {
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const extractAuthData = (data) => {
+    if (!data) return { user: null, business: null };
+    const rawUser = data.user || data;
+    const userObj = {
+      id: rawUser.id,
+      email: rawUser.email,
+      fullName: rawUser.full_name || rawUser.fullName || '',
+      full_name: rawUser.full_name || rawUser.fullName || '',
+      role: rawUser.role || 'merchant',
+      language: rawUser.language || 'en',
+      theme: rawUser.theme || 'system',
+      textSize: rawUser.text_size || rawUser.textSize || 'normal',
+      text_size: rawUser.text_size || rawUser.textSize || 'normal',
+    };
+    const rawBusiness = data.business || rawUser;
+    const businessObj = {
+      id: rawBusiness.business_id || rawBusiness.id,
+      name: rawBusiness.business_name || rawBusiness.name || 'My Business',
+      business_name: rawBusiness.business_name || rawBusiness.name || 'My Business',
+      gstin: rawBusiness.gstin || '',
+      state: rawBusiness.state || '',
+      state_code: rawBusiness.gstin ? rawBusiness.gstin.substring(0, 2) : (rawBusiness.state_code || '27'),
+      address: rawBusiness.address || '',
+      currency: rawBusiness.currency || 'INR',
+    };
+    return { user: userObj, business: businessObj };
+  };
+
   const fetchMe = async () => {
     const token = localStorage.getItem('khaata_token');
     if (!token) {
@@ -19,8 +47,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.get('/auth/me');
       if (res.data?.success && res.data?.data) {
-        setUser(res.data.data.user);
-        setBusiness(res.data.data.business);
+        const { user: u, business: b } = extractAuthData(res.data.data);
+        setUser(u);
+        setBusiness(b);
         return res.data.data;
       }
     } catch (err) {
@@ -40,10 +69,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
     if (res.data?.success && res.data?.data) {
-      const { token, user, business } = res.data.data;
+      const { token } = res.data.data;
+      const { user: u, business: b } = extractAuthData(res.data.data);
       localStorage.setItem('khaata_token', token);
-      setUser(user);
-      setBusiness(business);
+      setUser(u);
+      setBusiness(b);
       return res.data.data;
     }
     throw new Error(res.data?.error?.message || 'Login failed');
@@ -52,10 +82,11 @@ export const AuthProvider = ({ children }) => {
   const register = async (payload) => {
     const res = await api.post('/auth/register', payload);
     if (res.data?.success && res.data?.data) {
-      const { token, user, business } = res.data.data;
+      const { token } = res.data.data;
+      const { user: u, business: b } = extractAuthData(res.data.data);
       localStorage.setItem('khaata_token', token);
-      setUser(user);
-      setBusiness(business);
+      setUser(u);
+      setBusiness(b);
       return res.data.data;
     }
     throw new Error(res.data?.error?.message || 'Registration failed');
