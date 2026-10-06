@@ -1,3 +1,4 @@
-git add backend/scripts/populate-env.js frontend/src/pages/Login.jsx
-git commit --amend --no-edit
-git push -u origin main -f
+git add api vercel.json frontend/vercel.json frontend/src/lib/api.js
+git commit -m "fix(vercel): resolve 405 error with catch-all serverless function and route isolation"
+git push -u origin main
+

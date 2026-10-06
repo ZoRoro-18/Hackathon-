@@ -31,10 +31,14 @@ api.interceptors.response.use(
   (error) => {
     // Show exact backend error message in toast
     const backendMessage = error.response?.data?.error?.message;
-    const isNetworkError = !error.response || error.code === 'ERR_NETWORK';
-    const fallbackMessage = isNetworkError 
-      ? 'Cannot connect to backend server. Make sure the backend is running on port 5000.' 
-      : (error.message || 'An unexpected error occurred');
+    let fallbackMessage;
+    if (isNetworkError) {
+      fallbackMessage = 'Cannot connect to backend server. Make sure the backend is running.';
+    } else if (error.response?.status === 405) {
+      fallbackMessage = 'API endpoint returned 405 Method Not Allowed. The request was routed to a static file or missing serverless handler.';
+    } else {
+      fallbackMessage = error.message || 'An unexpected error occurred';
+    }
     const message = backendMessage || fallbackMessage;
 
     // Do not show toast for silent 401s on GET /auth/me
